@@ -4,9 +4,7 @@
 #include "../src/grammar.h"
 #include "../src/parser.h"
 
-#define print(word) std::cout << (word) << std::endl
 #define printm(word) std::cout << word << std::endl
-
 
 namespace {
 

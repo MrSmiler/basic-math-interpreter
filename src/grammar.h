@@ -20,16 +20,27 @@ class Term {
 	// Term(TermType type, void (*funcptr)(int)=nullptr);
 	TermType getType();
 	std::string getValue();
+
+	// set numerical value
 	void setNVal(std::string);
+
+	// set numerical value
 	void setNVal(int);
+
+
+	// get numerical value
 	int getNVal();
 
 
     protected:
+	// term type
 	TermType type;
+
+	// term string value
 	std::string value;
+
+	// numerical value
 	int nval = 0;
-	// void (*fptr)(int) = nullptr;
 
 }; // Term
 
@@ -50,7 +61,11 @@ class Product {
 	void (*action)(Term& leftTerm, std::stack<Term>& s);
 
 	Product& operator=(Product other);
+
+	// get left side of the product
 	Term getLeft();
+
+	// get right of the product
 	std::vector<Term> getRight();
 
 }; // Product 
@@ -79,7 +94,6 @@ class Action {
 };
 
 
-
 // Math Expression Grammar
 // mathematical Grammar defination:
 // Gramamr: <Variables, Terminals, Start variable, Proudcts>
@@ -89,20 +103,33 @@ class Grammar {
 	Grammar();
 
 	Product getProduct(int);
+
+	// get a action from the action section of the parsing table
 	Action getAction(int state, Token t);
+
+	// get a action from the goto section of the parsing table 
 	Action getAction(int state, Term t);
 
     private:
-
+	
+	// add new product to grammar
 	void addProduct(std::string left, std::string right, void (*action)(Term& leftTerm, std::stack<Term>& s));
 
+	// find the a term amonge the terminals and variables
 	bool findTerm(std::string str, std::vector<Term> terms);
 
+	// grammar variables
 	std::vector<Term> variables;
-	std::vector<Term> terminals;
-	Term s;
-	std::vector<Product> products;
 
+	// grammar terminals
+	std::vector<Term> terminals;
+
+	// start variable
+	Term s;
+
+	// grammar products
+	std::vector<Product> products;
 };
 
 #endif
+

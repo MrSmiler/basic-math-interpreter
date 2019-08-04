@@ -7,6 +7,9 @@
 #include <string>
 
 
+// scanner or lexical phase of the interpreter
+// this is reponsible for making tokens
+// from a given text
 class Lexical{
 
     public:
@@ -25,7 +28,7 @@ class Lexical{
 	// scanner status 0 mean without error and 1 means error
 	int getStatus();
 
-
+	// states of the lexer
 	enum STATES{
 	    START_STATE,	
 	    STATE_NUM,
