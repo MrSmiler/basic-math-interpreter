@@ -19,13 +19,15 @@ int main(){
 
        
 	
+    print("Press <Ctrl-c> to exit");
     while (1) {
 	std::cout << ">>> ";
 	std::getline(std::cin, text); 
+	
 	Lexical lexer(text);
-
 	parser.parse(lexer);
 
+	// parsing was successfull
 	if (parser.getStatus() == 0) {
 	    printm(">>> " << parser.getResult());
 	}
