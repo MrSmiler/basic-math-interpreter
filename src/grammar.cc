@@ -1,6 +1,16 @@
 #include "grammar.h"
+#include "token.h"
 #include "util.h"
 #include <string>
+#include <stack>
+#include <iostream>
+
+#define s(i) action = Action(Action::SHIFT, i)
+#define r(i) action = Action(Action::REDUCE, i)
+#define ERROR action = Action(Action::ERROR)
+#define g(i) action = Action(Action::GOTO, i)
+#define ACCEPT action = Action(Action::ACCEPT)
+
 
 // Term constructor
 Term::Term(TermType type, std::string value) {
@@ -25,25 +35,39 @@ std::string Term::getValue() {
     return this->value;
 } // getValue
 
+void Term::setNVal(std::string val) {
+    this->nval = util::convertToNumber(val);
+}
+
+void Term::setNVal(int val) {
+    this->nval = val;
+}
+
+int Term::getNVal() {
+    return this->nval;
+}
+
 // product constructor
-Product::Product(Term left, std::vector<Term> right) {
+Product::Product(Term left, std::vector<Term> right, void (*action)(Term& leftTerm, std::stack<Term>& s)) {
     this->left = left; 
     this->right = right;
+    this->action = action;
 } // Product
 
 Product::Product(const Product& other) {
     this->left = other.left;
     this->right = other.right;
+    this->action = other.action;
 } // Product
 
 Product& Product::operator=(Product other) {
 
     this->left = other.left;	
     this->right = other.right;
+    this->action = other.action;
     return *this;
 
 }
-
 
 Term Product::getLeft(){
     return this->left;
@@ -54,8 +78,55 @@ std::vector<Term> Product::getRight(){
 } // getRight
 
 
+Action::Action(ActionType type, int value) {
+    this->type = type;
+    this->value = value;
+}
 
-ExpGrammar::ExpGrammar() {
+Action::ActionType Action::getType() {
+    return this->type;
+}
+
+int Action::getValue() {
+    return this->value;
+}
+
+
+void replaceTerm(Term& leftTerm, std::stack<Term>& s) {
+    leftTerm.setNVal(s.top().getNVal());	
+    s.pop();
+}
+
+void ePran(Term& leftTerm, std::stack<Term>& s) {
+    s.pop();
+    leftTerm.setNVal(s.top().getNVal());	
+    s.pop();
+    s.pop();
+}
+
+void doOp(Term& leftTerm, std::stack<Term>& s) {
+    int x = s.top().getNVal();
+    s.pop();
+    std::string op = s.top().getValue();
+    s.pop();
+    int y = s.top().getNVal();
+    s.pop();
+    int r;
+
+    if (op == "+")
+	r = y + x;
+    else if (op == "-") 
+	r = y - x;
+    else if (op == "*")
+	r = y * x;
+    else if (op == "/")
+	r = y / x;
+
+    leftTerm.setNVal(r);	
+}
+
+
+Grammar::Grammar() {
 
     std::string startVar = "E";
     std::vector<std::string> variables = {"E", "T", "F"};
@@ -78,19 +149,19 @@ ExpGrammar::ExpGrammar() {
 
 
 
-    this->addProduct("E", "E + T");
-    this->addProduct("E", "E - T");
-    this->addProduct("E", "T");
-    this->addProduct("T", "T * F");
-    this->addProduct("T", "T / F");
-    this->addProduct("T", "F");
-    this->addProduct("F", "( E )");
-    this->addProduct("F", "num");
+    this->addProduct("E", "E + T", doOp);
+    this->addProduct("E", "E - T", doOp);
+    this->addProduct("E", "T", replaceTerm);
+    this->addProduct("T", "T * F", doOp);
+    this->addProduct("T", "T / F", doOp);
+    this->addProduct("T", "F", replaceTerm);
+    this->addProduct("F", "( E )", ePran);
+    this->addProduct("F", "num", replaceTerm);
 
 
 }
 
-bool ExpGrammar::findTerm(std::string str, std::vector<Term> terms){
+bool Grammar::findTerm(std::string str, std::vector<Term> terms){
     for(int i = 0; i < terms.size(); i++){
 	if(!str.compare(terms[i].getValue())){
 	   return true; 	
@@ -101,7 +172,7 @@ bool ExpGrammar::findTerm(std::string str, std::vector<Term> terms){
 } // findTerm
 
 
-void ExpGrammar::addProduct(std::string left, std::string right) {
+void Grammar::addProduct(std::string left, std::string right, void (*action)(Term& leftTerm, std::stack<Term>& s)) {
     Term productLeft = Term(Term::NT, left);
     
     std::vector<std::string> words = util::split(right, ' ');
@@ -128,22 +199,264 @@ void ExpGrammar::addProduct(std::string left, std::string right) {
     } // for
 
 
-    this->products.push_back(Product(productLeft, productRight));
+    this->products.push_back(Product(productLeft, productRight, action));
 
 } // addProduct
 
-Product ExpGrammar::getProduct(int i) {
-    return this->products[i];
+Product Grammar::getProduct(int i) {
+    return this->products[i-1];
 }
 
-void getAction(int state, Term t) {
+
+Action Grammar::getAction(int state, Token t) {
+    std::string val = t.getValue();
+    std::string type = t.getType();
+    
+    Action action;  
+
     switch(state) {
-    
 	case 0:
-	     
-    
-    } 
-}
+	    if (type == "num")
+		s(5);
+	    else if (val == "(")
+		s(4);
+	    else 
+		ERROR;
+	    break; 
+	case 1:
+	    if (val == "+")
+		s(6);
+	    else if (val == "-")
+		s(7);
 
+	    else if (type == "eos")
+		ACCEPT;
+	    else
+		ERROR;
+
+	    break;
+	case 2:
+	    if (val == "+" || val == "-")
+		r(3);
+	    else if (val == "*")
+		s(8);
+	    else if (val == "/")
+		s(9);
+	    else if (val == ")" || type == "eos")
+		r(3);
+	    else 
+		ERROR;
+
+	    break;
+	case 3:
+
+	    if (val == "+" || val == "-" ||
+		val == "*" || val == "/" ||
+		val == ")" || type == "eos")
+
+		r(6);
+
+	    else
+		ERROR;
+
+	    break;
+
+	case 4:
+	    if (type == "num")
+		s(5);
+	    else if (val == "(")
+		s(4);
+	    else
+		ERROR;
+	    break;	
+	case 5:
+	    if (val == "+" || val == "-" ||
+		val == "*" || val == "/" ||
+		val == ")" || type == "eos")
+
+		r(8);
+	    else
+		ERROR;
+
+	    break;
+	    
+	case 6:
+	case 7:
+	case 8:
+	case 9:
+	    if (type == "num")
+		s(5);
+	    else if (val == "(")
+		s(4);
+	    else 
+		ERROR;
+
+	    break;	
+
+	
+	case 10:
+	    if (val == "+")
+		s(6);
+	    else if (val == "-")
+		s(7);
+
+	    else if (val == ")")
+		s(15);
+	    else 
+		ERROR;
+
+	    break;
+
+	case 11:
+	    if (val == "+" || val == "-")
+		r(1);
+
+	    else if (val == "*")
+		s(8);
+	    else if (val == "/")
+		s(9);
+	    else if (val == ")" || type == "eos")
+		r(1);
+	    else 
+		ERROR;
+
+	    break;
+	case 12:
+	    if (val == "+" || val == "-")
+		r(2);
+
+	    else if (val == "*")
+		s(8);
+	    else if (val == "/")
+		s(9);
+	    else if (val == ")" || type == "eos")
+		r(2);
+	    else 
+		ERROR;
+
+	    break;
+
+	case 13:
+	    if (val == "+" || val == "-")
+		r(4);
+
+	    else if (val == "*")
+		r(4);
+	    else if (val == "/")
+		r(4);
+	    else if (val == ")" || type == "eos")
+		r(4);
+	    else 
+		ERROR;
+
+	    break;
+    
+	case 14:
+	    if (val == "+" || val == "-")
+		r(5);
+
+	    else if (val == "*")
+		r(5);
+	    else if (val == "/")
+		r(5);
+	    else if (val == ")" || type == "eos")
+		r(5);
+	    else 
+		ERROR;
+
+	    break;
+
+	case 15:
+	    if (val == "+" || val == "-")
+		r(7);
+
+	    else if (val == "*")
+		r(7);
+	    else if (val == "/")
+		r(7);
+	    else if (val == ")" || type == "eos")
+		r(7);
+	    else 
+		ERROR;
+
+	    break;
+	
+	default:
+	    ERROR;
+	    break;
+
+    } // switch 
+
+    return action;
+} // getAction
+
+
+
+Action Grammar::getAction(int state, Term t) {
+    std::string val = t.getValue();
+    
+    Action action;
+
+    switch(state) {
+	case 0:
+	    if (val == "E")
+		g(1);
+	    else if (val == "T")
+		g(2);
+	    else if (val == "F")
+		g(3);
+	    else
+		ERROR;
+	    break;
+
+	case 4:
+	    if (val == "E")
+		g(10);
+	    else if (val == "T")
+		g(2);
+	    else if (val == "F")
+		g(3);
+	    else
+		ERROR;
+	    break;
+	case 6:
+	    if (val == "T")
+		g(11);
+	    else if (val == "F")
+		g(3);
+	    else
+		ERROR;
+	    break;
+	case 7:
+	    if (val == "T")
+		g(12);
+	    else if (val == "F")
+		g(3);
+	    else
+		ERROR;
+	    break;
+
+	case 8:
+	    if (val == "F")
+		g(13);
+	    else
+		ERROR;
+	    break;
+
+	case 9:
+	    if (val == "F")
+		g(14);
+	    else
+		ERROR;
+	    break;
+	
+	default:
+	    ERROR;
+	    break;
+	    
+    } // switch
+
+    return action;
+}
 
 

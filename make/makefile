@@ -131,13 +131,13 @@ lex_unittest: $(GTEST_LIBS) lex_unittest.o lex.o token.o util.o
 
 # grammar
 
-grammar.o: $(SRC_DIR)/grammar.cc util.o
+grammar.o: $(SRC_DIR)/grammar.cc util.o token.o
 	$(CXX) -c $(SRC_DIR)/grammar.cc -o grammar.o
 
 grammar_unittest.o: $(TESTS_DIR)/grammar_unittest.cc grammar.o
 	$(CXX) $(CPPFLAGS) -c $(TESTS_DIR)/grammar_unittest.cc -o grammar_unittest.o
 
-grammar_unittest: $(GTEST_LIBS) grammar_unittest.o grammar.o util.o
+grammar_unittest: $(GTEST_LIBS) grammar_unittest.o grammar.o util.o token.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -L$(GTEST_LIB_DIR) -lgtest_main -lpthread $^ -o $@
 	
 # /grammar
@@ -159,6 +159,4 @@ main.o: $(SRC_DIR)/main.cc lex.o parser.o grammar.o token.o util.o
 
 main: lex.o parser.o grammar.o token.o util.o main.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
-
-
 

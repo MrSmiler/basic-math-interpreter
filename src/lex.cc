@@ -11,7 +11,7 @@ Lexical::Lexical(std::string text){
     this->status = 0;
 }
 
-Lexical::~Lexical(){
+Lexical::~Lexical() {
     /*
     for(int i = 0; i < this->tokens.size(); i++){
 	delete this->tokens[i]; 
@@ -19,7 +19,7 @@ Lexical::~Lexical(){
     */
 }
 
-std::vector<Token> Lexical::getTokens(){
+std::vector<Token> Lexical::getTokens() {
     return this->tokens;
 }
 
@@ -29,6 +29,7 @@ Token Lexical::nextToken() {
     std::string token_type;
     std::string token_value;
     Token token;
+
     while(this->nextChar() && !this->status){
 	ch = this->getChar();
 

@@ -5,9 +5,9 @@ namespace {
 
 TEST(gramamrTest, init) {
      
-    ExpGrammar grammar;
+    Grammar grammar;
 
-    Product p = grammar.getProduct(0);
+    Product p = grammar.getProduct(1);
     EXPECT_EQ(p.getLeft().getValue(), "E");
     EXPECT_EQ(p.getRight()[1].getValue(), "+");
     
